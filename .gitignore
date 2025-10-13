@@ -6,9 +6,17 @@ __pycache__/
 # C extensions
 *.so
 
+# Ігнорувати логи
+*.log
+
+# Ігнорувати системні файли
+.DS_Store
+Thumbs.db
 # Distribution / packaging
 .Python
 build/
+node_modules/
+.next/
 develop-eggs/
 dist/
 downloads/
