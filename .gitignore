@@ -2,21 +2,22 @@
 __pycache__/
 *.py[codz]
 *$py.class
+#Ignore node_modules
+node_modules/
+.next/
 
 # C extensions
 *.so
 
-# Ігнорувати логи
+# Ingnore logs
 *.log
 
-# Ігнорувати системні файли
+# Ignore system files
 .DS_Store
 Thumbs.db
 # Distribution / packaging
 .Python
 build/
-node_modules/
-.next/
 develop-eggs/
 dist/
 downloads/
