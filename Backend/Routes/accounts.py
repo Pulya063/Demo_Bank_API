@@ -1,7 +1,5 @@
 from uuid import uuid4
-
 from fastapi import HTTPException, APIRouter
-
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 
@@ -11,7 +9,7 @@ class Account(BaseModel):
     date: str
     balance: float = 0
 
-    @field_validator('date')
+    @field_validator("date")
     def validate_date(cls, value):
         if not value:
             raise ValueError("Date cannot be empty")
@@ -20,67 +18,57 @@ class Account(BaseModel):
         except ValueError:
             raise ValueError("Date must be in format YYYY-MM-DD")
         return value
+
     def show_info(self, account_id: str) -> dict:
         return {
             "account_id": account_id,
             "name": self.name,
             "surname": self.surname,
             "date": self.date,
-            "balance": self.balance
+            "balance": self.balance,
         }
-router = APIRouter(prefix="/accounts", tags=["Accounts"])
 
-accounts: dict[str , Account] = {}
+router = APIRouter(prefix="/accounts", tags=["Accounts"])
+accounts: dict[str, Account] = {}
 
 @router.post("/")
 def create_account(account: Account):
     account_id = str(uuid4())
     accounts[account_id] = account
-    # return print(json.dumps(account.show_info(account_id), indent=4)
     return account.show_info(account_id)
 
+@router.get("/show_accounts/")
+def show_all_accounts():
+    if not accounts:
+        return {"message": "No accounts found", "data": []}
+    return [acc.show_info(aid) for aid, acc in accounts.items()]
+
 @router.get("/sort_by/")
-def sort_by(by: str = "name" or float == 0, reverse: bool = True):
+def sort_by(by: str = "name", reverse: bool = True):
     if by not in Account.model_fields:
-        raise HTTPException(status_code=404, detail = "Sort by field '{}' not found.")
-        # return print("Sort by field '{}' not found.".format(by))
+        raise HTTPException(status_code=404, detail=f"Sort by field '{by}' not found.")
     sorted_list = sorted(accounts.items(), key=lambda x: getattr(x[1], by), reverse=reverse)
-    for account_id, acc_info in sorted_list:
-        # print(json.dumps(acc_info.show_info(account_id), indent=4))
-        return acc_info.show_info(account_id)
-    return sorted_list
-@router.get("/search/")
+    return [acc.show_info(aid) for aid, acc in sorted_list]
+
+@router.get("/search/{search_word}")
 def search_account(search_word: str):
     results = []
     for account_id, acc in accounts.items():
         acc_dict = acc.model_dump()
-        for value in acc_dict.values():
-            if search_word.lower() in str(value).lower():
-                results.append(acc.show_info(account_id))
-                break
+        if any(search_word.lower() in str(v).lower() for v in acc_dict.values()):
+            results.append(acc.show_info(account_id))
     return results
 
-@router.get("/show_accounts/")
-def show_all_accounts():
-    if accounts == {} or not accounts:
+@router.put("/change_all_danes/{account_id}")
+def change_all_dane(account_id: str, account: Account):
+    if account_id not in accounts:
         raise HTTPException(status_code=404, detail="No accounts found")
-        # print("No accounts found")
-    else:
-        for account_id, account in accounts.items():
-            # print(json.dumps(account.show_info(account_id), indent=4))
-            return account.show_info(account_id)
-        return None
+    accounts[account_id] = account
+    return {"updated": account_id, "data": account.show_info(account_id)}
 
-@router.get("/delete/")
+@router.delete("/delete/{account_id}")
 def delete_account(account_id: str):
-    if account_id in accounts:
-        try:
-            del accounts[account_id]
-            # return    print(json.dumps(account.show_info(account_id), indent=4))
-            for account_id, acc in accounts.items():
-                return acc.show_info(account_id)
-        except Exception:
-            raise HTTPException(status_code=404, detail="Account deletion failed")
-            # print("Account deletion failed")
-    else:
-        return None
+    if account_id not in accounts:
+        raise HTTPException(status_code=404, detail="Account not found")
+    del accounts[account_id]
+    return [acc.show_info(aid) for aid, acc in accounts.items()]
